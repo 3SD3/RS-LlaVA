@@ -9,6 +9,8 @@ from llava.mm_utils import tokenizer_image_token, get_model_name_from_path, Keyw
 from PIL import Image
 import math
 
+# torch.cuda.empty_cache()
+
 ######## model here.................
 model_path = 'BigData-KSU/RS-llava-v1.5-7b-LoRA'
 
@@ -98,7 +100,7 @@ def chat_with_gpt(text, chat_history):
             top_p=None,
             num_beams=1,
             no_repeat_ngram_size=3,
-            max_new_tokens=1024,
+            max_new_tokens=128,
             use_cache=True,
             pad_token_id=tokenizer.pad_token_id
         )

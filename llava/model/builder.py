@@ -23,13 +23,13 @@ from llava.model import *
 from llava.constants import DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 
 
-def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, load_4bit=False, device_map="cuda", device="cuda", **kwargs):
+def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, load_4bit=False, device_map="cpu", device="cuda", **kwargs):
     kwargs = {"device_map": device_map, **kwargs}
 
     if device != "cuda":
         kwargs['device_map'] = {"": device}
 
-    if load_8bit:
+    if load_8bit: 
         kwargs['load_in_8bit'] = True
     elif load_4bit:
         kwargs['load_in_4bit'] = True
@@ -78,9 +78,13 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
 
             from peft import PeftModel
             print('Loading LoRA weights...')
-            model = PeftModel.from_pretrained(model, model_path)
+            # model = PeftModel.from_pretrained(model, model_path)
+            try:
+                model = PeftModel.from_pretrained(model, model_path, offload_dir = "./offload/")
+            except ValueError as e:
+                print(f"Error loading LoRA weights: {e}")
             print('Merging LoRA weights...')
-            model = model.merge_and_unload()
+            # model = model.merge_and_unload()
             print('Model is loaded...')
         elif model_base is not None:
             # this may be mm projector only
@@ -113,6 +117,7 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
             from peft import PeftModel
             tokenizer = AutoTokenizer.from_pretrained(model_base, use_fast=False)
             model = AutoModelForCausalLM.from_pretrained(model_base, low_cpu_mem_usage=True, **kwargs)
+            # model = AutoModelForCausalLM.from_pretrained(model_base, low_cpu_mem_usage=True, **kwargs, torch_dtype=torch.float16).cuda()
             print(f"Loading LoRA weights from {model_path}")
             model = PeftModel.from_pretrained(model, model_path)
             print(f"Merging weights")
@@ -124,9 +129,11 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
             if 'mpt' in model_name.lower():
                 tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
                 model = AutoModelForCausalLM.from_pretrained(model_path, low_cpu_mem_usage=True, trust_remote_code=True, **kwargs)
+                # model = AutoModelForCausalLM.from_pretrained(model_path, low_cpu_mem_usage=True, trust_remote_code=True, **kwargs, torch_dtype=torch.float16).cuda()
             else:
                 tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
                 model = AutoModelForCausalLM.from_pretrained(model_path, low_cpu_mem_usage=True, **kwargs)
+                # model = AutoModelForCausalLM.from_pretrained(model_path, low_cpu_mem_usage=True, **kwargs, torch_dtype=torch.float16).cuda()
 
     image_processor = None
 
